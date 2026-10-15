@@ -1,12 +1,20 @@
 import chess
 import customtkinter as ctk
-from engine.game import GameManager
+from .game_manager import GameManager
+from engine.engine import Engine
+
 
 class ChessApp(ctk.CTk):
     def __init__(self):
         super().__init__()
+
+        # Initialize game manager
         self.game = GameManager()
+
+        # Initialize engine
+        self.engine = Engine(self.game)
         
+        # Configure window settings
         self.title("Chess Board")
         self.geometry("550x650")
         
@@ -14,6 +22,7 @@ class ChessApp(ctk.CTk):
         ctk.set_appearance_mode("dark")
         ctk.set_default_color_theme("blue")
         
+        # Unicode pieces for board display
         self.unicode_pieces = {
             chess.PAWN: {"white": "♙", "black": "♟"},
             chess.KNIGHT: {"white": "♘", "black": "♞"},
@@ -23,6 +32,7 @@ class ChessApp(ctk.CTk):
             chess.KING: {"white": "♔", "black": "♚"}
         }
         
+        # Default select squere to None
         self.selected_square = None
         
         # UI Setup
@@ -38,12 +48,14 @@ class ChessApp(ctk.CTk):
         self.buttons = {}
         self.create_board_ui()
         self.update_board_ui()
+
         
-    def create_board_ui(self):
+    def create_board_ui(self) -> None:
         for rank in range(7, -1, -1):
             for file in range(8):
                 square = chess.square(file, rank)
-                # Traditional chess board colors
+                
+                # Chess board colors
                 color = "white" if (rank + file) % 2 != 0 else "gray"
                 fg_col = "#f0d9b5" if color == "white" else "#b58863"
                 
@@ -61,18 +73,20 @@ class ChessApp(ctk.CTk):
                 )
                 btn.grid(row=7-rank, column=file)
                 self.buttons[square] = btn
-                
-    def update_board_ui(self):
+
+
+    def update_board_ui(self) -> None:
         for square in chess.SQUARES:
             piece = self.game.get_piece_at(square)
             btn = self.buttons[square]
+            
             if piece:
                 color_key = "white" if piece.color == chess.WHITE else "black"
                 btn.configure(text=self.unicode_pieces[piece.piece_type][color_key])
             else:
                 btn.configure(text="")
                 
-            # Reset background colors
+            # Reset background colors 
             rank = chess.square_rank(square)
             file = chess.square_file(square)
             default_color = "#f0d9b5" if (rank + file) % 2 != 0 else "#b58863"
@@ -88,10 +102,12 @@ class ChessApp(ctk.CTk):
             self.buttons[last_move.from_square].configure(fg_color="#cdd26a")
             self.buttons[last_move.to_square].configure(fg_color="#cdd26a")
 
-    def on_square_click(self, square):
+
+    def on_square_click(self, square: int) -> None:
         if self.game.is_game_over():
             return
-            
+        
+        # Check if a cleck is selecting a piece or attempting a move
         if self.selected_square is None:
             # Selecting a piece
             piece = self.game.get_piece_at(square)
@@ -121,10 +137,15 @@ class ChessApp(ctk.CTk):
                 # Update status
                 if self.game.get_turn() == chess.WHITE:
                     self.status_label.configure(text="White to move")
-                else:
+                else: 
                     self.status_label.configure(text="Black to move")
-                    
+                
                 self.check_game_over()
+
+                # Call engine to make a move if it's black's turn
+                if self.game.get_turn() == chess.BLACK:
+                    self.engine_call()
+
             else:
                 # If clicked on another of own pieces, select it instead
                 piece = self.game.get_piece_at(square)
@@ -133,12 +154,22 @@ class ChessApp(ctk.CTk):
                 else:
                     self.selected_square = None
                 self.update_board_ui()
-                
-    def check_game_over(self):
+
+
+    def check_game_over(self) -> None:
         reason, result = self.game.get_game_over_reason()
         if reason:
             self.status_label.configure(text=f"Game Over: {reason} ({result})", text_color="red")
 
-if __name__ == "__main__":
-    app = ChessApp()
-    app.mainloop()
+
+    def engine_call(self) -> None:
+        move = self.engine.move()
+        if self.game.make_move(move):
+            self.update_board_ui()
+            
+            if self.game.get_turn() == chess.WHITE:
+                self.status_label.configure(text="White to move")
+            else: 
+                self.status_label.configure(text="Black to move")
+            
+            self.check_game_over()

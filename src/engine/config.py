@@ -1,0 +1,2 @@
+# Constants
+DEPTH = 4
