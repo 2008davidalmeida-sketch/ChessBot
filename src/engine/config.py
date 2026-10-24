@@ -1,2 +1,2 @@
 # Constants
-DEPTH = 4
+DEPTH = 3

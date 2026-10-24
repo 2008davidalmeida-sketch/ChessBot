@@ -80,20 +80,15 @@ class Engine():
 
         return best
 
-
-    def evaluate(self) -> int:
-        return self.board_value() + self.positional_value()
-
     
-    def board_value(self) -> int:
-        """Static evaluation: material score relative to the side to move."""
+    def evaluate(self) -> int:
         score = 0
         current_turn = self.gm.get_turn()
 
         for square in chess.SQUARES:
             piece = self.gm.get_piece_at(square)
             if piece is not None:
-                value = self.gm.get_piece_value(piece)
+                value = self.get_score(piece, square)
                 if piece.color == current_turn:
                     score += value
                 else:
@@ -102,7 +97,9 @@ class Engine():
         return score
 
     
-    def positional_value(self, piece: chess.Piece, square: chess.Square) -> int:    
-        pass
+    def get_score(self, piece: chess.Piece, square: chess.Square) -> int:    
+        return self.gm.get_piece_value(piece) + self.gm.get_positional_value(piece, square)
+
+    
             
         
